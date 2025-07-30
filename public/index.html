@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 Bot - Формула 1</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-flag-checkered"></i>
+                    <span>F1 Bot</span>
+                </div>
+                <div class="header-actions">
+                    <button id="theme-toggle" class="theme-toggle">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="nav">
+            <div class="nav-tabs">
+                <button class="nav-tab active" data-tab="dashboard">
+                    <i class="fas fa-home"></i>
+                    <span>Главная</span>
+                </button>
+                <button class="nav-tab" data-tab="races">
+                    <i class="fas fa-flag-checkered"></i>
+                    <span>Гонки</span>
+                </button>
+                <button class="nav-tab" data-tab="drivers">
+                    <i class="fas fa-user"></i>
+                    <span>Пилоты</span>
+                </button>
+                <button class="nav-tab" data-tab="teams">
+                    <i class="fas fa-car"></i>
+                    <span>Команды</span>
+                </button>
+                <button class="nav-tab" data-tab="standings">
+                    <i class="fas fa-trophy"></i>
+                    <span>Зачёт</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-content active">
+                <div class="dashboard-grid">
+                    <!-- Next Race Card -->
+                    <div class="card next-race-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-calendar-alt"></i> Ближайшая гонка</h3>
+                        </div>
+                        <div class="card-content" id="next-race-content">
+                            <div class="loading">Загрузка...</div>
+                        </div>
+                    </div>
+
+                    <!-- Last Race Results -->
+                    <div class="card last-race-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-trophy"></i> Последняя гонка</h3>
+                        </div>
+                        <div class="card-content" id="last-race-content">
+                            <div class="loading">Загрузка...</div>
+                        </div>
+                    </div>
+
+                    <!-- Driver Standings Preview -->
+                    <div class="card standings-preview-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-medal"></i> Топ пилотов</h3>
+                        </div>
+                        <div class="card-content" id="standings-preview-content">
+                            <div class="loading">Загрузка...</div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="card quick-actions-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-bolt"></i> Быстрые действия</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="quick-actions">
+                                <button class="action-btn" onclick="showCalendar()">
+                                    <i class="fas fa-calendar"></i>
+                                    <span>Календарь</span>
+                                </button>
+                                <button class="action-btn" onclick="showDrivers()">
+                                    <i class="fas fa-users"></i>
+                                    <span>Все пилоты</span>
+                                </button>
+                                <button class="action-btn" onclick="showTeams()">
+                                    <i class="fas fa-car-side"></i>
+                                    <span>Команды</span>
+                                </button>
+                                <button class="action-btn" onclick="showStandings()">
+                                    <i class="fas fa-list-ol"></i>
+                                    <span>Зачёты</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Races Tab -->
+            <div id="races" class="tab-content">
+                <div class="races-container">
+                    <div class="races-header">
+                        <h2>Гонки сезона</h2>
+                        <div class="races-filter">
+                            <button class="filter-btn active" data-filter="all">Все</button>
+                            <button class="filter-btn" data-filter="upcoming">Предстоящие</button>
+                            <button class="filter-btn" data-filter="completed">Завершённые</button>
+                        </div>
+                    </div>
+                    <div class="races-list" id="races-list">
+                        <div class="loading">Загрузка гонок...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Drivers Tab -->
+            <div id="drivers" class="tab-content">
+                <div class="drivers-container">
+                    <div class="drivers-header">
+                        <h2>Пилоты F1</h2>
+                        <div class="search-box">
+                            <input type="text" id="driver-search" placeholder="Поиск пилота...">
+                            <i class="fas fa-search"></i>
+                        </div>
+                    </div>
+                    <div class="drivers-grid" id="drivers-grid">
+                        <div class="loading">Загрузка пилотов...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teams Tab -->
+            <div id="teams" class="tab-content">
+                <div class="teams-container">
+                    <div class="teams-header">
+                        <h2>Команды F1</h2>
+                        <div class="search-box">
+                            <input type="text" id="team-search" placeholder="Поиск команды...">
+                            <i class="fas fa-search"></i>
+                        </div>
+                    </div>
+                    <div class="teams-grid" id="teams-grid">
+                        <div class="loading">Загрузка команд...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Standings Tab -->
+            <div id="standings" class="tab-content">
+                <div class="standings-container">
+                    <div class="standings-header">
+                        <h2>Зачёты</h2>
+                        <div class="standings-tabs">
+                            <button class="standings-tab active" data-standings="drivers">
+                                <i class="fas fa-user"></i> Пилоты
+                            </button>
+                            <button class="standings-tab" data-standings="constructors">
+                                <i class="fas fa-car"></i> Конструкторы
+                            </button>
+                        </div>
+                    </div>
+                    <div class="standings-content">
+                        <div id="drivers-standings" class="standings-table active">
+                            <div class="loading">Загрузка зачёта пилотов...</div>
+                        </div>
+                        <div id="constructors-standings" class="standings-table">
+                            <div class="loading">Загрузка зачёта конструкторов...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="loading-overlay">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Загрузка...</span>
+            </div>
+        </div>
+
+        <!-- Modal -->
+        <div id="modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-title">Заголовок</h3>
+                    <button class="modal-close" onclick="closeModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body" id="modal-body">
+                    <!-- Modal content will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+</body>
+</html> 

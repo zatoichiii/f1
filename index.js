@@ -2,7 +2,9 @@ require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 const cron = require('node-cron');
 const axios = require('axios');
-const healthServer = require('./health');
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
 const { 
   getAllDrivers,
   getLastRaceResults, 
@@ -28,6 +30,24 @@ if (!process.env.TELEGRAM_BOT_TOKEN) {
   console.error('Создайте файл .env и добавьте: TELEGRAM_BOT_TOKEN=ваш_токен_бота');
   process.exit(1);
 }
+
+// Инициализация Express сервера для веб-интерфейса
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    message: 'F1 Bot is running! 🏁',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Инициализация бота с улучшенной обработкой ошибок
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { 
@@ -64,7 +84,148 @@ const EMOJIS = {
   info: 'ℹ️'
 };
 
-// Основные команды
+// API Routes для веб-интерфейса
+app.get('/api/next-race', async (req, res) => {
+  try {
+    const nextRace = await getNextRace();
+    res.json(nextRace);
+  } catch (error) {
+    console.error('API Error - next-race:', error);
+    res.status(500).json({ error: 'Ошибка получения данных о ближайшей гонке' });
+  }
+});
+
+app.get('/api/last-race', async (req, res) => {
+  try {
+    const lastRace = await getLastRace();
+    res.json(lastRace);
+  } catch (error) {
+    console.error('API Error - last-race:', error);
+    res.status(500).json({ error: 'Ошибка получения данных о последней гонке' });
+  }
+});
+
+app.get('/api/last-race-results', async (req, res) => {
+  try {
+    const results = await getLastRaceResults();
+    res.json(results);
+  } catch (error) {
+    console.error('API Error - last-race-results:', error);
+    res.status(500).json({ error: 'Ошибка получения результатов последней гонки' });
+  }
+});
+
+app.get('/api/calendar', async (req, res) => {
+  try {
+    const calendar = await getSeasonCalendar();
+    res.json(calendar);
+  } catch (error) {
+    console.error('API Error - calendar:', error);
+    res.status(500).json({ error: 'Ошибка получения календаря сезона' });
+  }
+});
+
+app.get('/api/drivers', async (req, res) => {
+  try {
+    const drivers = await getAllDrivers();
+    res.json(drivers);
+  } catch (error) {
+    console.error('API Error - drivers:', error);
+    res.status(500).json({ error: 'Ошибка получения списка пилотов' });
+  }
+});
+
+app.get('/api/driver/:id', async (req, res) => {
+  try {
+    const driver = await getDriverInfo(req.params.id);
+    if (!driver) {
+      return res.status(404).json({ error: 'Пилот не найден' });
+    }
+    res.json(driver);
+  } catch (error) {
+    console.error('API Error - driver:', error);
+    res.status(500).json({ error: 'Ошибка получения информации о пилоте' });
+  }
+});
+
+app.get('/api/teams', async (req, res) => {
+  try {
+    const teams = await getAllTeams();
+    res.json(teams);
+  } catch (error) {
+    console.error('API Error - teams:', error);
+    res.status(500).json({ error: 'Ошибка получения списка команд' });
+  }
+});
+
+app.get('/api/team/:id', async (req, res) => {
+  try {
+    const team = await getTeamInfo(req.params.id);
+    if (!team) {
+      return res.status(404).json({ error: 'Команда не найдена' });
+    }
+    res.json(team);
+  } catch (error) {
+    console.error('API Error - team:', error);
+    res.status(500).json({ error: 'Ошибка получения информации о команде' });
+  }
+});
+
+app.get('/api/team/:id/drivers', async (req, res) => {
+  try {
+    const drivers = await getTeamDrivers(req.params.id);
+    res.json(drivers);
+  } catch (error) {
+    console.error('API Error - team drivers:', error);
+    res.status(500).json({ error: 'Ошибка получения пилотов команды' });
+  }
+});
+
+app.get('/api/standings/drivers', async (req, res) => {
+  try {
+    const standings = await getCurrentDriverStandings();
+    res.json(standings);
+  } catch (error) {
+    console.error('API Error - driver standings:', error);
+    res.status(500).json({ error: 'Ошибка получения зачёта пилотов' });
+  }
+});
+
+app.get('/api/standings/constructors', async (req, res) => {
+  try {
+    const standings = await getCurrentConstructorStandings();
+    res.json(standings);
+  } catch (error) {
+    console.error('API Error - constructor standings:', error);
+    res.status(500).json({ error: 'Ошибка получения зачёта конструкторов' });
+  }
+});
+
+app.get('/api/circuits', async (req, res) => {
+  try {
+    const circuits = await getAllCircuits();
+    res.json(circuits);
+  } catch (error) {
+    console.error('API Error - circuits:', error);
+    res.status(500).json({ error: 'Ошибка получения списка трасс' });
+  }
+});
+
+app.get('/api/circuit/:id', async (req, res) => {
+  try {
+    const circuit = await getAllCircuits();
+    const foundCircuit = circuit.find(c => c.id === req.params.id);
+    if (!foundCircuit) {
+      return res.status(404).json({ error: 'Трасса не найдена' });
+    }
+    res.json(foundCircuit);
+  } catch (error) {
+    console.error('API Error - circuit:', error);
+    res.status(500).json({ error: 'Ошибка получения информации о трассе' });
+  }
+});
+
+// Основные команды бота
 bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id;
   const welcomeMessage = `
@@ -85,11 +246,41 @@ ${EMOJIS.flag} Доступные команды:
 • /subscribe - Подписаться на уведомления
 • /subscription - Проверить статус подписки
 • /favorite [имя] - Установить любимого пилота
+• /webapp - Открыть веб-интерфейс
 
 ${EMOJIS.heart} Кто твой любимый пилот? Напиши мне его имя!
   `;
   
   await bot.sendMessage(chatId, welcomeMessage);
+});
+
+// Команда для открытия веб-интерфейса
+bot.onText(/\/webapp/, async (msg) => {
+  const chatId = msg.chat.id;
+  const webAppUrl = process.env.WEBAPP_URL || `https://${process.env.RAILWAY_STATIC_URL || 'localhost:3000'}`;
+  
+  const webAppMessage = `
+${EMOJIS.rocket} Открыть современный веб-интерфейс F1 Bot!
+
+${EMOJIS.info} Нажмите кнопку ниже, чтобы открыть интерактивный интерфейс с:
+• Красивыми карточками гонок
+• Детальной информацией о пилотах и командах
+• Интерактивными зачётами
+• Поиском и фильтрацией
+• Темной и светлой темой
+• Адаптивным дизайном
+  `;
+  
+  await bot.sendMessage(chatId, webAppMessage, {
+    reply_markup: {
+      inline_keyboard: [[
+        {
+          text: `${EMOJIS.car} Открыть веб-интерфейс`,
+          web_app: { url: webAppUrl }
+        }
+      ]]
+    }
+  });
 });
 
 // Ближайшая гонка
@@ -612,6 +803,12 @@ bot.on('polling_error', (error) => {
 
 bot.on('error', (error) => {
   console.error('❌ Bot error:', error.message);
+});
+
+// Запуск Express сервера
+app.listen(PORT, () => {
+  console.log(`🌐 Веб-сервер запущен на порту ${PORT}`);
+  console.log(`📱 Веб-интерфейс доступен по адресу: http://localhost:${PORT}`);
 });
 
 console.log('F1 Bot запущен! 🏁'); 

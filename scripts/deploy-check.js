@@ -2,26 +2,31 @@
 
 require('dotenv').config();
 
-console.log('🔍 Проверка готовности к деплою...\n');
-
-// Проверка наличия необходимых файлов
 const fs = require('fs');
+const path = require('path');
+
+console.log('🔍 Проверка готовности к деплою в Railway...\n');
+
+// Проверка обязательных файлов
 const requiredFiles = [
   'package.json',
   'index.js',
+  'public/index.html',
+  'public/css/style.css',
+  'public/js/app.js',
+  'public/js/api.js',
+  'public/js/ui.js',
   'railway.json',
-  'render.yaml',
-  'Procfile',
-  '.gitignore'
+  'Procfile'
 ];
 
 console.log('📁 Проверка файлов:');
+let allFilesExist = true;
+
 requiredFiles.forEach(file => {
-  if (fs.existsSync(file)) {
-    console.log(`✅ ${file}`);
-  } else {
-    console.log(`❌ ${file} - ОТСУТСТВУЕТ`);
-  }
+  const exists = fs.existsSync(file);
+  console.log(`${exists ? '✅' : '❌'} ${file}`);
+  if (!exists) allFilesExist = false;
 });
 
 // Проверка package.json
@@ -29,39 +34,66 @@ console.log('\n📦 Проверка package.json:');
 try {
   const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
   
-  if (packageJson.scripts && packageJson.scripts.start) {
-    console.log('✅ Скрипт start найден');
-  } else {
-    console.log('❌ Скрипт start отсутствует');
-  }
+  // Проверка обязательных полей
+  const requiredFields = ['name', 'version', 'main', 'scripts', 'dependencies'];
+  requiredFields.forEach(field => {
+    if (packageJson[field]) {
+      console.log(`✅ ${field}: ${typeof packageJson[field] === 'object' ? 'OK' : packageJson[field]}`);
+    } else {
+      console.log(`❌ ${field}: отсутствует`);
+      allFilesExist = false;
+    }
+  });
   
-  if (packageJson.dependencies) {
-    console.log('✅ Зависимости настроены');
-  } else {
-    console.log('❌ Зависимости не настроены');
-  }
+  // Проверка зависимостей
+  const requiredDeps = ['express', 'cors', 'node-telegram-bot-api', 'axios'];
+  console.log('\n📚 Проверка зависимостей:');
+  requiredDeps.forEach(dep => {
+    if (packageJson.dependencies && packageJson.dependencies[dep]) {
+      console.log(`✅ ${dep}: ${packageJson.dependencies[dep]}`);
+    } else {
+      console.log(`❌ ${dep}: отсутствует`);
+      allFilesExist = false;
+    }
+  });
+  
 } catch (error) {
-  console.log('❌ Ошибка чтения package.json');
+  console.log('❌ Ошибка чтения package.json:', error.message);
+  allFilesExist = false;
 }
 
 // Проверка переменных окружения
 console.log('\n🔧 Проверка переменных окружения:');
-if (process.env.TELEGRAM_BOT_TOKEN) {
-  console.log('✅ TELEGRAM_BOT_TOKEN настроен');
-} else {
-  console.log('⚠️  TELEGRAM_BOT_TOKEN не найден (нужно будет настроить на хостинге)');
+const envExample = fs.existsSync('env.example');
+console.log(`${envExample ? '✅' : '❌'} env.example`);
+
+// Проверка структуры public
+console.log('\n📱 Проверка веб-интерфейса:');
+const publicDir = fs.existsSync('public');
+const publicIndex = fs.existsSync('public/index.html');
+const publicCss = fs.existsSync('public/css/style.css');
+const publicJs = fs.existsSync('public/js/app.js');
+
+console.log(`${publicDir ? '✅' : '❌'} public/ директория`);
+console.log(`${publicIndex ? '✅' : '❌'} public/index.html`);
+console.log(`${publicCss ? '✅' : '❌'} public/css/style.css`);
+console.log(`${publicJs ? '✅' : '❌'} public/js/app.js`);
+
+if (!publicDir || !publicIndex || !publicCss || !publicJs) {
+  allFilesExist = false;
 }
 
-if (process.env.F1_API_URL) {
-  console.log('✅ F1_API_URL настроен');
+// Итоговая проверка
+console.log('\n🎯 Итоговая проверка:');
+if (allFilesExist) {
+  console.log('✅ Проект готов к деплою в Railway!');
+  console.log('\n📋 Следующие шаги:');
+  console.log('1. Загрузите код в GitHub репозиторий');
+  console.log('2. Создайте проект в Railway');
+  console.log('3. Настройте переменные окружения');
+  console.log('4. Дождитесь успешного деплоя');
+  console.log('\n🚀 Удачи с деплоем!');
 } else {
-  console.log('ℹ️  F1_API_URL не настроен (будет использован по умолчанию)');
-}
-
-console.log('\n🚀 Готово к деплою!');
-console.log('\n📋 Следующие шаги:');
-console.log('1. Закоммитьте все изменения в Git');
-console.log('2. Загрузите код на GitHub');
-console.log('3. Выберите платформу для деплоя (Railway, Render, Heroku)');
-console.log('4. Настройте переменные окружения на хостинге');
-console.log('5. Запустите деплой'); 
+  console.log('❌ Проект не готов к деплою. Исправьте ошибки выше.');
+  process.exit(1);
+} 

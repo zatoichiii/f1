@@ -1,10 +1,11 @@
 {
   "name": "f1-telegram-bot",
   "version": "1.0.0",
-  "description": "Telegram bot for Formula 1 fans",
+  "description": "Telegram bot for Formula 1 fans with modern web interface",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
+    "web": "node test-server.js",
     "dev": "nodemon index.js",
     "stop": "node scripts/stop-bot.js",
     "check": "node -e \"require('dotenv').config(); console.log('🔍 Проверка конфигурации...'); console.log('TELEGRAM_BOT_TOKEN:', process.env.TELEGRAM_BOT_TOKEN ? '✅ Настроен' : '❌ Не найден'); console.log('F1_API_URL:', process.env.F1_API_URL || 'https://f1api.dev/api');\"",
@@ -12,15 +13,18 @@
     "postinstall": "echo 'F1 Bot dependencies installed successfully!'"
   },
   "dependencies": {
-    "node-telegram-bot-api": "^0.64.0",
     "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
     "node-cron": "^3.0.3",
-    "dotenv": "^16.3.1"
+    "node-telegram-bot-api": "^0.64.0",
+    "path": "^0.12.7"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
   },
-  "keywords": ["telegram", "bot", "formula1", "f1"],
+  "keywords": ["telegram", "bot", "formula1", "f1", "webapp", "webview"],
   "author": "F1 Bot",
   "license": "MIT"
-} 
+}
