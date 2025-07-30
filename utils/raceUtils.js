@@ -121,15 +121,25 @@ async function getSeasonCalendar() {
   }
 }
 
-// Получение текущего чемпионата пилотов
+// Получение зачёта пилотов
 async function getCurrentDriverStandings() {
   try {
     const response = await axios.get(`${F1_API}/current/drivers-championship`);
     
     // Проверяем структуру ответа от нового API
     if (response.data && response.data.drivers_championship) {
+      // Обрабатываем данные, чтобы правильно отображать названия команд
+      const standings = response.data.drivers_championship.map(item => ({
+        ...item,
+        team: {
+          ...item.team,
+          name: item.team.teamName || item.team.name || 'Unknown Team',
+          nationality: item.team.country || item.team.nationality || 'Unknown'
+        }
+      }));
+      
       return {
-        standings: response.data.drivers_championship
+        standings: standings
       };
     } else if (response.data && response.data.standings) {
       return {
@@ -148,15 +158,25 @@ async function getCurrentDriverStandings() {
   }
 }
 
-// Получение текущего конструкторского зачёта
+// Получение зачёта конструкторов
 async function getCurrentConstructorStandings() {
   try {
     const response = await axios.get(`${F1_API}/current/constructors-championship`);
     
     // Проверяем структуру ответа от нового API
     if (response.data && response.data.constructors_championship) {
+      // Обрабатываем данные, чтобы правильно отображать названия команд
+      const standings = response.data.constructors_championship.map(item => ({
+        ...item,
+        team: {
+          ...item.team,
+          name: item.team.teamName || item.team.name || 'Unknown Team',
+          nationality: item.team.country || item.team.nationality || 'Unknown'
+        }
+      }));
+      
       return {
-        standings: response.data.constructors_championship
+        standings: standings
       };
     } else if (response.data && response.data.standings) {
       return {
@@ -181,13 +201,19 @@ async function getAllTeams() {
     const response = await axios.get(`${F1_API}/current/teams`);
     
     // Проверяем структуру ответа от нового API
+    let teams = [];
     if (response.data && response.data.teams && Array.isArray(response.data.teams)) {
-      return response.data.teams;
+      teams = response.data.teams;
     } else if (response.data && Array.isArray(response.data)) {
-      return response.data;
+      teams = response.data;
     }
     
-    return [];
+    // Обрабатываем данные, чтобы правильно отображать названия команд
+    return teams.map(team => ({
+      ...team,
+      name: team.teamName || team.name || 'Unknown Team',
+      nationality: team.country || team.nationality || 'Unknown'
+    }));
   } catch (error) {
     console.error('Error fetching teams:', error);
     return [];
@@ -200,10 +226,20 @@ async function getTeamInfo(teamId) {
     const response = await axios.get(`${F1_API}/current/teams/${teamId}`);
     
     // Проверяем структуру ответа от нового API
+    let team = null;
     if (response.data && response.data.team) {
-      return response.data.team;
+      team = response.data.team;
     } else if (response.data) {
-      return response.data;
+      team = response.data;
+    }
+    
+    if (team) {
+      // Обрабатываем данные, чтобы правильно отображать названия команд
+      return {
+        ...team,
+        name: team.teamName || team.name || 'Unknown Team',
+        nationality: team.country || team.nationality || 'Unknown'
+      };
     }
     
     return null;
